@@ -100,19 +100,9 @@ Start the Understand Anything dashboard to visualize the knowledge graph for the
    DASHBOARD_DIR="$PLUGIN_ROOT/packages/dashboard"
    ```
 
-4. **Fast path — try the prebuilt viewer first (no install, no build).** Each release ships a self-contained viewer tarball; run it pinned to the installed plugin version:
-   ```bash
-   : "${PLUGIN_ROOT:?Run step 3 first so PLUGIN_ROOT is set}"
-   : "${PROJECT_DIR:?Run step 1 first so PROJECT_DIR is set}"
-   PLUGIN_VERSION=$(node -p "require('$PLUGIN_ROOT/package.json').version")
-   VIEWER_URL="https://github.com/Egonex-AI/Understand-Anything/releases/download/v${PLUGIN_VERSION}/understand-anything-viewer.tgz"
-   npx --yes "$VIEWER_URL" "$PROJECT_DIR"
-   ```
-   Run this in the background. It prints the same `🔑  Dashboard URL` line as the dev server:
-   - If the line appears, **skip steps 5-6** and continue at step 7.
-   - If the process exits without printing it (no release asset for this version, or no network), fall back to steps 5-6.
+   **Never download or run a prebuilt viewer** (e.g. `npx <release .tgz URL>`): release assets are not built from this source by CI and cannot be verified. Always build the dashboard locally from this checkout.
 
-5. Fallback: install dependencies and build if needed:
+4. Install dependencies and build if needed:
    ```bash
    : "${PLUGIN_ROOT:?Run step 3 first so PLUGIN_ROOT is set}"
    DASHBOARD_DIR="${DASHBOARD_DIR:-$PLUGIN_ROOT/packages/dashboard}"
@@ -124,21 +114,21 @@ Start the Understand Anything dashboard to visualize the knowledge graph for the
    cd "$PLUGIN_ROOT" && pnpm --filter @understand-anything/core build
    ```
 
-6. Fallback: start the Vite dev server pointing at the project's knowledge graph:
+5. Start the Vite dev server pointing at the project's knowledge graph:
    ```bash
    : "${PROJECT_DIR:?Run step 1 first so PROJECT_DIR is set}"
-   : "${DASHBOARD_DIR:?Run step 5 first so DASHBOARD_DIR is set}"
+   : "${DASHBOARD_DIR:?Run step 4 first so DASHBOARD_DIR is set}"
    cd "$DASHBOARD_DIR" && GRAPH_DIR="$PROJECT_DIR" npx vite --host 127.0.0.1
    ```
    Run this in the background so the user can continue working.
 
-7. **Capture the access token URL from the server output.** The server (viewer or Vite) prints a line like:
+6. **Capture the access token URL from the server output.** The Vite server prints a line like:
    ```
    🔑  Dashboard URL: http://127.0.0.1:<PORT>?token=<TOKEN>
    ```
    Extract the full URL including the `?token=` parameter. The token is required to access the knowledge graph data — without it the dashboard will show an "Access Token Required" gate.
 
-8. Report to the user, including the full tokenized URL:
+7. Report to the user, including the full tokenized URL:
    ```
    Dashboard started at http://127.0.0.1:<PORT>?token=<TOKEN>
    Viewing: $UA_DIR/knowledge-graph.json
@@ -149,7 +139,7 @@ Start the Understand Anything dashboard to visualize the knowledge graph for the
 
 ## Notes
 
-- The fast path (step 4) downloads a version-pinned, self-contained viewer from the GitHub release — nothing is installed into the plugin directory and no build runs
-- The dashboard auto-opens in the default browser (both the viewer and Vite's `--open`)
-- If port 5173 is already in use, the next available port is picked (both paths)
-- In the fallback, the `GRAPH_DIR` environment variable tells the dev server where to find the knowledge graph
+- The prebuilt-viewer fast path was removed in this fork; the dashboard is always built from local source
+- The dashboard auto-opens in the default browser (Vite's `--open`)
+- If port 5173 is already in use, the next available port is picked
+- The `GRAPH_DIR` environment variable tells the dev server where to find the knowledge graph
