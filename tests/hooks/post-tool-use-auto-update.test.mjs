@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -19,12 +20,7 @@ const hookScript = join(
   'hooks',
   'post-tool-use-auto-update.mjs',
 );
-const hooksConfig = JSON.parse(
-  readFileSync(
-    join(repoRoot, 'understand-anything-plugin', 'hooks', 'hooks.json'),
-    'utf8',
-  ),
-);
+const hooksConfigPath = join(repoRoot, 'understand-anything-plugin', 'hooks', 'hooks.json');
 
 function runHook({
   command = 'git commit -m "test"',
@@ -65,17 +61,9 @@ function runHook({
 }
 
 describe('PostToolUse auto-update hook', () => {
-  it('is registered as the Bash PostToolUse handler', () => {
-    const registration = hooksConfig.hooks.PostToolUse[0];
-
-    expect(registration.matcher).toBe('Bash');
-    expect(registration.hooks).toEqual([
-      {
-        type: 'command',
-        command:
-          'node "${CLAUDE_PLUGIN_ROOT}/hooks/post-tool-use-auto-update.mjs"',
-      },
-    ]);
+  // Fork rule: hooks auto-start paid LLM runs without asking, so they are never registered.
+  it('is not registered (hooks.json removed in this fork)', () => {
+    expect(existsSync(hooksConfigPath)).toBe(false);
   });
 
   it('injects the auto-update instruction as PostToolUse additional context', () => {

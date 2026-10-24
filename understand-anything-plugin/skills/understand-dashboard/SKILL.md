@@ -100,13 +100,13 @@ Start the Understand Anything dashboard to visualize the knowledge graph for the
    DASHBOARD_DIR="$PLUGIN_ROOT/packages/dashboard"
    ```
 
-   **Never download or run a prebuilt viewer** (e.g. `npx <release .tgz URL>`): release assets are not built from this source by CI and cannot be verified. Always build the dashboard locally from this checkout.
+   **Never download or run a prebuilt viewer** (e.g. an `npx` call on a GitHub release asset): release assets are not built from this source by CI and cannot be verified. Always build the dashboard locally from this checkout.
 
 4. Install dependencies and build if needed:
    ```bash
    : "${PLUGIN_ROOT:?Run step 3 first so PLUGIN_ROOT is set}"
    DASHBOARD_DIR="${DASHBOARD_DIR:-$PLUGIN_ROOT/packages/dashboard}"
-   cd "$DASHBOARD_DIR" && (pnpm install --frozen-lockfile 2>/dev/null || pnpm install)
+   cd "$DASHBOARD_DIR" && pnpm install --frozen-lockfile
    ```
    Then ensure the core package is built (the dashboard depends on it):
    ```bash

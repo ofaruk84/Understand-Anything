@@ -70,6 +70,18 @@ describe('skill command hardening', () => {
     expect(content).not.toMatch(/\.tgz/);
   });
 
+  it('installs dependencies only from the frozen lockfile', () => {
+    for (const relPath of [
+      'understand-anything-plugin/skills/understand/SKILL.md',
+      'understand-anything-plugin/skills/understand-dashboard/SKILL.md',
+      'understand-anything-plugin/skills/understand-figma/SKILL.md',
+    ]) {
+      const content = readRepoFile(relPath);
+      expect(content).toMatch(/pnpm install --frozen-lockfile/);
+      expect(content).not.toMatch(/\|\|\s*pnpm install/);
+    }
+  });
+
   it('marks project-controlled context as untrusted data', () => {
     const understand = readRepoFile('understand-anything-plugin/skills/understand/SKILL.md');
     const knowledge = readRepoFile('understand-anything-plugin/skills/understand-knowledge/SKILL.md');

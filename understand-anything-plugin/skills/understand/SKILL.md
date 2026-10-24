@@ -115,7 +115,7 @@ Determine whether to run a full analysis or incremental update.
    fi
 
    if [ ! -f "$PLUGIN_ROOT/packages/core/dist/index.js" ]; then
-     cd "$PLUGIN_ROOT" && (pnpm install --frozen-lockfile 2>/dev/null || pnpm install) && pnpm --filter @understand-anything/core build
+     cd "$PLUGIN_ROOT" && pnpm install --frozen-lockfile && pnpm --filter @understand-anything/core build
    fi
    ```
 
