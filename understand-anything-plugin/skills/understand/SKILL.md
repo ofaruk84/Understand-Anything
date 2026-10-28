@@ -635,6 +635,14 @@ node "<SKILL_DIR>/finalize-incremental.mjs" "$PROJECT_ROOT"
 
 This helper validates/deduplicates nodes and edges, reconciles layers/tour, and independently reruns the shared symbol validator on the exact graph to be saved. It then atomically saves the graph, patches only changed fingerprints while preserving all others, removes deleted fingerprints, and only then advances `meta.json`. A cached successful merge report cannot bypass the save check. If symbol loss is first detected here, use the same one-retry procedure above, rerun merge and any required architecture/tour phases, then finalize again; if the retry was already used or remains unresolved, **STOP** with the old graph and baselines intact.
 
+After finalize succeeds, run the dashboard schema gate on the saved graph (it catches field-type errors such as a string `lineRange` that the symbol validator does not check):
+
+```bash
+PLUGIN_ROOT="$PLUGIN_ROOT" node "<SKILL_DIR>/validate-schema.mjs" "$UA_DIR/knowledge-graph.json"
+```
+
+On exit 1, repair the named fields in `$UA_DIR/knowledge-graph.json` as described in Phase 6 step 6 (no node/edge deletion), re-run once, and report any remaining `dropped:` lines.
+
 - Without `--review`, report the incremental summary and **STOP**. Do not run Phase 6 or the full-save Phase 7; this is what prevents the ordinary local update from paying for whole-graph review.
 - With `--review`, copy the newly saved `$UA_DIR/knowledge-graph.json` to `$UA_DIR/intermediate/assembled-graph.json`, then continue to the full graph-reviewer path in Phase 6. Do not run the inline default reviewer.
 
@@ -800,7 +808,16 @@ Pass these parameters in the dispatch prompt:
    - Re-run the final graph validation after automated fixes
    - If critical issues remain after one fix attempt, save the graph anyway but include the warnings in the final report and mark dashboard auto-launch as skipped
 
-6. **If `issues` array is empty:** Proceed to Phase 7.
+6. **Dashboard schema gate (both default and `--review` paths).** The inline check above does not validate field types; the dashboard's `validateGraph` silently drops any node/edge that fails the schema (e.g. a string `lineRange` instead of a `[number, number]` tuple). Run the same validator before saving:
+   ```bash
+   PLUGIN_ROOT="$PLUGIN_ROOT" node "<SKILL_DIR>/validate-schema.mjs" \
+     "$UA_DIR/intermediate/assembled-graph.json" \
+     --report "$UA_DIR/intermediate/schema-report.json"
+   ```
+   - Exit 0: proceed.
+   - Exit 1: read the `dropped:` lines. Repair the named fields in `assembled-graph.json` without losing content — e.g. move a prose `lineRange` into `languageNotes` and remove the bad `lineRange`; coerce numeric strings; fill missing required fields. Never delete a node or edge to pass the gate. Re-run once. If it still fails, save anyway, list every `dropped:` line in the final report, and mark dashboard auto-launch as skipped.
+
+7. **If `issues` array is empty and the schema gate passed:** Proceed to Phase 7.
 
 ---
 
@@ -873,7 +890,7 @@ Report to the user: `[Phase 7/7] Saving knowledge graph...`
    - Any warnings from the reviewer
    - Path to the output file: `$UA_DIR/knowledge-graph.json`
 
-6. Only automatically launch the dashboard by invoking the `/understand-dashboard` skill if final graph validation passed after normalization/review fixes.
+6. Only automatically launch the dashboard by invoking the `/understand-dashboard` skill if final graph validation and the Phase 6 dashboard schema gate passed after normalization/review fixes.
    If final validation did not pass, report that the graph was saved with warnings and dashboard launch was skipped.
 
 ---
